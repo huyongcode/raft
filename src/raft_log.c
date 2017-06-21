@@ -29,10 +29,10 @@ typedef struct
     int count;
 
     /* position of the queue */
-    int front, back;
+    int front, back; //front 为数组的头 realloc 会为0,而base 一直自加； back为数组的尾部，poll的时候back不变，count会变
 
     /* we compact the log, and thus need to increment the Base Log Index */
-    int base;
+    int base;  // 一直自加
 
     raft_entry_t* entries;
 
@@ -41,6 +41,10 @@ typedef struct
     void* raft;
 } log_private_t;
 
+/*
+temp i                     count         
+me        front        size   
+*/
 static void __ensurecapacity(log_private_t * me)
 {
     int i, j;
@@ -63,8 +67,8 @@ static void __ensurecapacity(log_private_t * me)
 
     me->size *= 2;
     me->entries = temp;
-    me->front = 0;
-    me->back = me->count;
+    me->front = 0;  //当realloc 数组的时候 为0
+    me->back = me->count;   // back为count的数量
 }
 
 log_t* log_new()
@@ -106,7 +110,7 @@ int log_append_entry(log_t* me_, raft_entry_t* c)
     if (me->cb && me->cb->log_offer)
     {
         void* ud = raft_get_udata(me->raft);
-        e = me->cb->log_offer(me->raft, ud, c, me->back);
+        e = me->cb->log_offer(me->raft, ud, c, me->back); //放到磁盘
         raft_offer_log(me->raft, c, me->back);
         if (e == RAFT_ERR_SHUTDOWN)
             return e;
@@ -238,7 +242,7 @@ void log_free(log_t * me_)
     free(me);
 }
 
-int log_get_current_idx(log_t* me_)
+int log_get_current_idx(log_t* me_) // idx 为所有的日志的索引，以1为起点
 {
     log_private_t* me = (log_private_t*)me_;
     return log_count(me_) + me->base;

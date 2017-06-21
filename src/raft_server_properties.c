@@ -81,15 +81,15 @@ int raft_get_voted_for(raft_server_t* me_)
     return me->voted_for;
 }
 
-void raft_set_current_term(raft_server_t* me_, const int term)
+void raft_set_current_term(raft_server_t* me_, const int term) //term每次跟新都要存盘
 {
     raft_server_private_t* me = (raft_server_private_t*)me_;
     if (me->current_term < term)
     {
         me->current_term = term;
         me->voted_for = -1;
-        assert(me->cb.persist_term);
-        me->cb.persist_term(me_, me->udata, term);
+        if (me->cb.persist_term)
+            me->cb.persist_term(me_, me->udata, term);
     }
 }
 
