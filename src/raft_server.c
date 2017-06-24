@@ -964,7 +964,7 @@ int raft_msg_entry_response_committed(raft_server_t* me_,
         return 0;
 
     /* entry from another leader has invalidated this entry message */
-    if (r->term != ety->term)
+    if (r->term != ety->term) // 如果不同，可能是临时的leader 将其日志覆盖了
         return -1;
     return r->idx <= raft_get_commit_idx(me_);
 }
